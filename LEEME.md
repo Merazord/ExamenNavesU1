@@ -9,6 +9,7 @@ En Unity Hub, elige Add / Agregar proyecto y selecciona esta carpeta **ExamenNav
 - Flechas o WASD: mover.
 - Mouse: apuntar. La nave inicia en el centro mirando arriba y empieza a girar al mover el mouse.
 - Clic izquierdo o espacio: disparar; se puede mantener presionado.
+- Escape: abrir o cerrar el menu de pausa. Continuar reanuda la partida, Reintentar inicia otra desde cero y Salir del juego cierra el ejecutable (en Unity detiene Play). La pausa congela la partida y la musica.
 - Volver a jugar: reiniciar despues de perder o alcanzar 200 puntos.
 
 Si usas el ejecutable, conserva juntos el archivo `.exe`, la carpeta `_Data` y las librerias incluidas en Build.

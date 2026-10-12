@@ -12,6 +12,7 @@ namespace ExamenNavesU1
         public int enemyPoints = 3;
         public int score, record;
         public bool finished;
+        public bool paused { get; private set; }
         public Player player;
         public AudioSource effects;
         float nextRock, nextEnemy, nextPower;
@@ -21,6 +22,8 @@ namespace ExamenNavesU1
         void Awake()
         {
             instance = this;
+            Time.timeScale = 1;
+            AudioListener.pause = false;
             recordPath = Path.Combine(Application.persistentDataPath, "record.json");
             try { if (File.Exists(recordPath)) record = JsonUtility.FromJson<RecordData>(File.ReadAllText(recordPath)).score; }
             catch (Exception e) { Debug.LogWarning("No se pudo leer el record: " + e.Message); }
@@ -43,7 +46,8 @@ namespace ExamenNavesU1
 
         void Update()
         {
-            if (finished) return;
+            if (Input.GetKeyDown(KeyCode.Escape)) TogglePause();
+            if (finished || paused) return;
             if (Time.time >= nextRock)
             {
                 SpawnObstacle(false);
@@ -124,6 +128,41 @@ namespace ExamenNavesU1
             GetComponent<Hud>().won = won;
             Sound(won ? "win" : "lose");
         }
-        public void Restart() { SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); }
+        public void TogglePause()
+        {
+            if (finished) return;
+            SetPaused(!paused);
+        }
+        void SetPaused(bool value)
+        {
+            paused = value;
+            Time.timeScale = value ? 0 : 1;
+            AudioListener.pause = value;
+            var hud = GetComponent<Hud>();
+            hud.pausePanel.SetActive(value);
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(value ? hud.continueButton.gameObject : null);
+        }
+        public void Continue() { SetPaused(false); }
+        public void Restart()
+        {
+            SetPaused(false);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+        public void Quit()
+        {
+            SetPaused(false);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+        void OnDestroy()
+        {
+            if (instance != this) return;
+            Time.timeScale = 1;
+            AudioListener.pause = false;
+            instance = null;
+        }
     }
 }

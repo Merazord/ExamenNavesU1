@@ -30,6 +30,8 @@ namespace ExamenNavesU1
             if (hud == null) hud = game.gameObject.AddComponent<Hud>();
             if (hud.pointsText == null) CreateHud(hud, game, camera);
             var savedCanvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
+            if (hud.pausePanel == null) CreatePauseMenu(hud, game, savedCanvas.transform);
+            savedCanvas.transform.Find("Controles").GetComponent<Text>().text = "WASD / Flechas: mover  |  Mouse: apuntar  |  Clic / Espacio: disparar  |  Esc: pausa";
             savedCanvas.GetComponent<CanvasScaler>().matchWidthOrHeight = 0;
             var controlsRect = savedCanvas.transform.Find("Controles").GetComponent<RectTransform>();
             controlsRect.anchorMin = controlsRect.anchorMax = Vector2.zero;
@@ -42,6 +44,9 @@ namespace ExamenNavesU1
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
             Validate();
+            hud.pausePanel.SetActive(true);
+            RenderPreview("Validation/pause-preview.png");
+            hud.pausePanel.SetActive(false);
             Debug.Log("EXAMEN_PREVIEW_OK");
         }
 
@@ -114,12 +119,52 @@ namespace ExamenNavesU1
                 new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
         }
 
+        static void CreatePauseMenu(Hud hud, Game game, Transform canvas)
+        {
+            var overlay = Panel("Menu de pausa", canvas, 0, 0, 960, 540);
+            var rect = overlay.rectTransform;
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            overlay.color = new Color(0, 0, 0, .65f);
+            var panel = Panel("Opciones", overlay.transform, 0, 0, 360, 300);
+            panel.rectTransform.anchorMin = panel.rectTransform.anchorMax = new Vector2(.5f, .5f);
+            panel.rectTransform.pivot = new Vector2(.5f, .5f);
+            panel.rectTransform.anchoredPosition = Vector2.zero;
+            var title = Label("Titulo", panel.transform, "PAUSA", 0, 15, 360, 50, 30);
+            title.alignment = TextAnchor.MiddleCenter;
+            hud.pausePanel = overlay.gameObject;
+            hud.continueButton = PauseButton("Continuar", panel.transform, 80, game.Continue);
+            PauseButton("Reintentar", panel.transform, 145, game.Restart);
+            PauseButton("Salir del juego", panel.transform, 210, game.Quit);
+            overlay.gameObject.SetActive(false);
+        }
+        static Button PauseButton(string name, Transform parent, float y, UnityEngine.Events.UnityAction action)
+        {
+            var image = Panel(name, parent, 50, y, 260, 45);
+            image.color = new Color(.23f, .29f, .39f);
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            var label = Label("Texto", button.transform, name.ToUpperInvariant(), 0, 0, 260, 45);
+            label.alignment = TextAnchor.MiddleCenter;
+            UnityEventTools.AddPersistentListener(button.onClick, action);
+            return button;
+        }
+
         public static void Validate()
         {
             var game = UnityEngine.Object.FindFirstObjectByType<Game>();
             var hud = game.GetComponent<Hud>();
             if (GameObject.Find("Fondo") == null || game.player == null || hud == null || hud.pointsText == null || hud.hearts.Length != 5)
                 throw new Exception("Faltan objetos guardados para la previa.");
+            if (hud.pausePanel == null || hud.continueButton == null || hud.pausePanel.activeSelf)
+                throw new Exception("Falta el menu de pausa o no esta oculto.");
+            foreach (string name in new[] { "Continuar", "Reintentar", "Salir del juego" })
+                if (hud.pausePanel.transform.Find("Opciones/" + name).GetComponent<Button>().onClick.GetPersistentEventCount() != 1)
+                    throw new Exception("Falta la accion de pausa: " + name);
+            RenderPreview("Validation/scene-preview.png");
+        }
+        static void RenderPreview(string path)
+        {
             Canvas.ForceUpdateCanvases();
             var camera = Camera.main;
             var target = new RenderTexture(1280, 720, 24);
@@ -128,7 +173,7 @@ namespace ExamenNavesU1
             var image = new Texture2D(1280, 720, TextureFormat.RGB24, false);
             image.ReadPixels(new UnityEngine.Rect(0, 0, 1280, 720), 0, 0); image.Apply();
             Directory.CreateDirectory("Validation");
-            File.WriteAllBytes("Validation/scene-preview.png", image.EncodeToPNG());
+            File.WriteAllBytes(path, image.EncodeToPNG());
             RenderTexture.active = previous; camera.targetTexture = null;
             UnityEngine.Object.DestroyImmediate(image); UnityEngine.Object.DestroyImmediate(target);
         }

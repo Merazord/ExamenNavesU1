@@ -42,6 +42,7 @@ namespace ExamenNavesU1
         }
         IEnumerator Start()
         {
+            DontDestroyOnLoad(gameObject);
             yield return null;
             recordPath = Path.Combine(Application.persistentDataPath, "record.json");
             hadRecord = File.Exists(recordPath);
@@ -70,6 +71,22 @@ namespace ExamenNavesU1
             Check(UnityEngine.Object.FindObjectsByType<Player>(FindObjectsSortMode.None).Length == 1, "Una sola nave al iniciar Play");
             Check(game.GetComponent<Hud>().pointsText != null && !game.GetComponent<Hud>().resultPanel.activeSelf, "Interfaz guardada y fin de partida oculto");
             Check(Mathf.Abs(player.transform.eulerAngles.z) < 1, "Nave empieza mirando hacia arriba");
+            var hud = game.GetComponent<Hud>();
+            Check(hud.pausePanel != null && !hud.pausePanel.activeSelf, "Menu de pausa oculto al comenzar");
+            var moving = Projectile.Fire(new Vector2(-4, -2), Vector2.up, false, 0);
+            yield return new WaitForSeconds(.08f);
+            game.TogglePause();
+            var position = moving.transform.position;
+            float pausedTime = Time.time;
+            Check(game.paused && Time.timeScale == 0 && AudioListener.pause && hud.pausePanel.activeSelf, "Pausa detiene tiempo y audio y muestra el menu");
+            Check(UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == hud.continueButton.gameObject, "Continuar seleccionado para teclado");
+            yield return new WaitForSecondsRealtime(.2f);
+            Check(moving.transform.position == position && Time.time == pausedTime, "Balas y reloj congelados durante pausa");
+            hud.continueButton.onClick.Invoke();
+            Check(!game.paused && Time.timeScale == 1 && !AudioListener.pause && !hud.pausePanel.activeSelf, "Continuar reanuda partida y audio");
+            game.TogglePause(); game.TogglePause();
+            Check(!game.paused, "Alternar pausa vuelve a la partida");
+            Destroy(moving.gameObject);
             yield return new WaitForSeconds(.2f);
             ScreenCapture.CaptureScreenshot(Path.GetFullPath("Validation/gameplay.png"));
             for (int kind = 0; kind < 3; kind++)
@@ -114,7 +131,14 @@ namespace ExamenNavesU1
             game.finished = false;
             game.End(false);
             Check(game.finished && !game.GetComponent<Hud>().won, "Pantalla de derrota");
+            game.TogglePause();
+            Check(!game.paused && !hud.pausePanel.activeSelf, "Escape no abre pausa al terminar");
             yield return new WaitForSeconds(.2f);
+            game.finished = false;
+            game.TogglePause();
+            hud.pausePanel.transform.Find("Opciones/Reintentar").GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            yield return new WaitForSecondsRealtime(.2f);
+            Check(Game.instance != game && !Game.instance.paused && Time.timeScale == 1 && !AudioListener.pause && Game.instance.score == 0 && Game.instance.player.lives == 5, "Reintentar desde pausa carga una partida nueva sin quedar congelada");
         }
     }
 }

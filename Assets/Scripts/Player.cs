@@ -13,7 +13,7 @@ namespace ExamenNavesU1
         void Start() { lastMouse = Input.mousePosition; }
         void Update()
         {
-            if (Game.instance.finished) return;
+            if (Game.instance.finished || Game.instance.paused) return;
             Vector2 mouse = Input.mousePosition;
             if (Vector2.Distance(mouse, lastMouse) > 1) aiming = true;
             lastMouse = mouse;
@@ -42,7 +42,7 @@ namespace ExamenNavesU1
 
         void FixedUpdate()
         {
-            if (Game.instance.finished) return;
+            if (Game.instance.finished || Game.instance.paused) return;
             Vector2 pos = GetComponent<Rigidbody2D>().position + movement * 4.5f * Time.fixedDeltaTime;
             pos.x = Mathf.Clamp(pos.x, -Game.HalfWidth + .45f, Game.HalfWidth - .45f);
             pos.y = Mathf.Clamp(pos.y, -4.35f, 3.9f);
@@ -51,7 +51,7 @@ namespace ExamenNavesU1
 
         void OnTriggerEnter2D(Collider2D other)
         {
-            if (Game.instance.finished) return;
+            if (Game.instance.finished || Game.instance.paused) return;
             var pickup = other.GetComponent<Pickup>();
             if (pickup != null)
             {

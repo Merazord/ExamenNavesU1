@@ -8,6 +8,8 @@ namespace ExamenNavesU1
         public Text pointsText, recordText, weaponText;
         public Image[] hearts;
         public GameObject resultPanel;
+        public GameObject pausePanel;
+        public Button continueButton;
         public Text resultTitle, resultText;
         readonly string[] weapons = { "NORMAL", "MULTIPLE", "ADICIONAL" };
         void Update()
